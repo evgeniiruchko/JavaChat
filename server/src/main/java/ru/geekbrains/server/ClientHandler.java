@@ -4,6 +4,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ClientHandler {
     private Server server;
@@ -18,7 +20,9 @@ public class ClientHandler {
             this.socket = socket;
             this.in = new DataInputStream(socket.getInputStream());
             this.out = new DataOutputStream(socket.getOutputStream());
-            new Thread(() -> {
+            ExecutorService executorService = Executors.newCachedThreadPool();
+            //new Thread(() -> {
+            executorService.execute(() -> {
                 try {
                     while (true) {
                         String str = in.readUTF();
@@ -31,7 +35,7 @@ public class ClientHandler {
                                     if (!server.isNickInChat(nickFromDB)) {
                                         nickname = nickFromDB;
                                         sendMsg("/authok " + nickname + " " + subStrings[1]);
-                                        server.subscribe(this);
+                                        server.subscribe(ClientHandler.this);
                                         break;
                                     } else {
                                         sendMsg("This nick already in use");
@@ -99,9 +103,11 @@ public class ClientHandler {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    server.unsubscribe(this);
+                    server.unsubscribe(ClientHandler.this);
                 }
-            }).start();
+//            }).start();
+            });
+            executorService.shutdown();
         } catch (IOException e) {
             e.printStackTrace();
         }
